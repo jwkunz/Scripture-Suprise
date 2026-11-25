@@ -59,6 +59,18 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
+      - name: Remove all previous releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 --json tagName -q '.[].tagName' |
+            while read -r old; do
+              [ "$old" = "$TAG" ] && continue
+              gh release delete "$old" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
+            done
+          # Re-running a tag build replaces its own release too
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
